@@ -23,7 +23,7 @@ Create and send an Unvault spend transaction from the specified vault
 >bitvault unvault <amount-in-sats> <vault-address>
 ```
 
-### Unvault (in development)
+### Recover (in development)
 Create and send a Recovery spend transaction from the specified vault
 ```
 >bitvault recover <amount-in-sats> <vault-address>
