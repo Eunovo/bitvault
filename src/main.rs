@@ -1,8 +1,10 @@
 mod bitcoin;
 mod commands;
+mod db;
 
 use crate::bitcoin::connect_to_bitcoind;
-use commands::create_vault::create_vault;
+use commands::{create_vault::create_vault, list_vault::list_vault};
+use db::VaultTable;
 use std::{env, process};
 
 // Exits with error
@@ -45,10 +47,14 @@ fn parse_args(mut args: Vec<String>) -> (String, Vec<String>) {
 }
 
 fn main() {
-    let (method, _args) = parse_args(env::args().collect());
+    let (method, args) = parse_args(env::args().collect());
     let _client = connect_to_bitcoind();
+    let db = db::DB::connect().expect("Should start Sqlite");
+    let vault_table = VaultTable::new(db);
+ 
     match method.as_str() {
-        "create-vault" => create_vault(),
+        "create-vault" => create_vault(vault_table, &args[0]),
+        "list-vault" => list_vault(vault_table),
         _ => eprintln!("\"{method}\" not supported"),
     }
 }

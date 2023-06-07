@@ -8,6 +8,8 @@ use bitcoin::{script, Address, ScriptBuf, Sequence};
 use secp256k1::hashes::sha256;
 use secp256k1::{rand, KeyPair, Secp256k1};
 
+use crate::db::{VaultTable, VaultTableRow};
+
 fn tag_engine(tag_name: &str) -> sha256::HashEngine {
     let mut engine = sha256::Hash::engine();
     let tag_hash = sha256::Hash::hash(tag_name.as_bytes());
@@ -83,10 +85,14 @@ fn create_vault_script() -> ScriptBuf {
     )
 }
 
-pub fn create_vault() {
+pub fn create_vault(db: VaultTable, name: &String) {
     let vault_script = create_vault_script();
     let address = Address::from_script(&vault_script, Regtest).expect("Should create address");
-    println!("New Vault Address: {address}");
+
+    match db.insert(&VaultTableRow(name.to_string(), address.to_string())) {
+        Ok(_) => println!("New Vault Address: {address}"),
+        Err(e) => eprintln!("Could not save vault: {0}", e.to_string())
+    }
 }
 
 #[test]
