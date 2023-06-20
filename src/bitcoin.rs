@@ -75,8 +75,8 @@ struct DescriptorInfo {
     checksum: String,
 }
 
-pub fn import_privkey(client: &Client) -> Result<bool, Box<dyn std::error::Error>> {
-    let privkey = "cP53pDbR5WtAD8dYAW9hhTjuvvTVaEiQBdrz9XPrgLBeRFiyCbQr";
+pub fn import_privkey(client: &Client, privkey: &String) -> Result<bool, Box<dyn std::error::Error>> {
+    // let privkey = "cP53pDbR5WtAD8dYAW9hhTjuvvTVaEiQBdrz9XPrgLBeRFiyCbQr";
     let desc = format!("pk({privkey})");
     let descriptor_info: DescriptorInfo =
         send_json_request(client, "getdescriptorinfo", &[serialize(&desc)]);
@@ -105,7 +105,8 @@ pub fn import_privkey(client: &Client) -> Result<bool, Box<dyn std::error::Error
 #[test]
 fn test_import_privkey() {
     let client = connect_to_bitcoind();
-    match import_privkey(&client) {
+    let privkey = String::from("");
+    match import_privkey(&client, &privkey) {
         Ok(_) => return,
         Err(e) => panic!("{}", e),
     };
@@ -130,12 +131,12 @@ pub fn generate_to_address(client: &Client, address: &String) {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ListUnspentResponse {
-    txid: String,
-    vout: i32,
+    pub txid: String,
+    pub vout: u32,
     address: String,
     label: String,
-    scriptPubKey: String,
-    amount: f32,
+    pub scriptPubKey: String,
+    pub amount: f64,
     confirmations: i32,
     redeemScript: Option<String>,
     witnessScript: Option<String>,
@@ -157,7 +158,8 @@ pub fn list_unspent(client: &Client, address: &String) -> Vec<ListUnspentRespons
 #[test]
 fn test_generate_and_fetch_coins() {
     let client = connect_to_bitcoind();
-    match import_privkey(&client) {
+    let privkey = String::from("");
+    match import_privkey(&client, &privkey) {
         Ok(_) => {
             let address = get_new_address(&client);
             generate_to_address(&client, &address);

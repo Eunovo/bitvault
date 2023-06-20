@@ -1,6 +1,10 @@
 mod bitcoin;
+mod bip119;
+mod core;
 mod commands;
 mod db;
+mod constants;
+mod test_vault_and_trigger;
 
 use crate::bitcoin::connect_to_bitcoind;
 use commands::{create_vault::create_vault, list_vault::list_vault};

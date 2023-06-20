@@ -8,7 +8,9 @@ use bitcoin::{script, Address, ScriptBuf, Sequence};
 use secp256k1::hashes::sha256;
 use secp256k1::{rand, KeyPair, Secp256k1};
 
+use crate::core::{Vault};
 use crate::db::{VaultTable, VaultTableRow};
+use crate::constants::{ OP_VAULT, OP_VAULT_RECOVER, OP_CTV };
 
 fn tag_engine(tag_name: &str) -> sha256::HashEngine {
     let mut engine = sha256::Hash::engine();
@@ -18,11 +20,7 @@ fn tag_engine(tag_name: &str) -> sha256::HashEngine {
     engine
 }
 
-fn create_vault_script() -> ScriptBuf {
-    let op_vault = 0xbb;
-    let op_vault_recover = 0xbc;
-    let op_ctv = 0xb3;
-
+pub fn create_vault_script() -> Vault {
     let secp = Secp256k1::new();
 
     // Create recovery and unvault keys
@@ -42,7 +40,7 @@ fn create_vault_script() -> ScriptBuf {
     // Recovery Script: <recovery_auth_script_pubkey or ""> <recovery_hash> op_vault_recover
     let recovery_script = script::Builder::new()
         .push_slice(recovery_hash)
-        .push_opcode(op_vault_recover.into())
+        .push_opcode(OP_VAULT_RECOVER.into())
         .into_script();
 
     let spend_delay = 10;
@@ -50,7 +48,7 @@ fn create_vault_script() -> ScriptBuf {
     let vault_script = script::Builder::new()
         .push_opcode(OP_CSV)
         .push_opcode(OP_DROP)
-        .push_opcode(op_ctv.into())
+        .push_opcode(OP_CTV.into())
         .into_bytes();
 
     let mut vault_script_bytes = PushBytesBuf::new();
@@ -67,7 +65,7 @@ fn create_vault_script() -> ScriptBuf {
         .push_sequence(Sequence::from_height(spend_delay))
         .push_int(2)
         .push_slice(vault_script_bytes)
-        .push_opcode(op_vault.into())
+        .push_opcode(OP_VAULT.into())
         .into_script();
 
     let taproot_spend_info = TaprootBuilder::new()
@@ -78,16 +76,26 @@ fn create_vault_script() -> ScriptBuf {
         .finalize(&secp, recovery_internal_key)
         .expect("Should be finalizable");
 
-    ScriptBuf::new_v1_p2tr(
+    let vault_script = ScriptBuf::new_v1_p2tr(
         &secp,
         taproot_spend_info.internal_key(),
         taproot_spend_info.merkle_root(),
-    )
+    );
+
+    Vault {
+        recover_key: recovery_internal_key,
+        recover_script: recovery_script,
+        spend_delay,
+        trigger_script,
+        unvault_key,
+        vault_script
+    }
 }
 
 pub fn create_vault(db: VaultTable, name: &String) {
-    let vault_script = create_vault_script();
-    let address = Address::from_script(&vault_script, Regtest).expect("Should create address");
+    let vault= create_vault_script();
+    let address = Address::from_script(&vault.vault_script, Regtest)
+        .expect("Should create address");
 
     match db.insert(&VaultTableRow(name.to_string(), address.to_string())) {
         Ok(_) => println!("New Vault Address: {address}"),
@@ -97,7 +105,7 @@ pub fn create_vault(db: VaultTable, name: &String) {
 
 #[test]
 fn test_create_vault() {
-    let vault_script = create_vault_script();
-    let address = Address::from_script(&vault_script, Regtest);
+    let vault = create_vault_script();
+    let address = Address::from_script(&vault.vault_script, Regtest);
     assert!(address.is_ok(), "Should be okay");
 }
