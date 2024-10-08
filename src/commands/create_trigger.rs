@@ -20,6 +20,7 @@ pub fn create_trigger_tranx(
 ) -> Result<Transaction, Box<dyn std::error::Error>> {
     let secp = Secp256k1::new();
     let trigger = VaultTrigger::new(vault);
+    let fee = 150;
     let transaction = Transaction {
         version: 2,
         lock_time: LockTime::ZERO,
@@ -30,7 +31,7 @@ pub fn create_trigger_tranx(
             sequence: Sequence::from_height(vault.spend_delay),
         }],
         output: vec![TxOut {
-            value: amount,
+            value: amount - fee,
             script_pubkey: trigger.trigger_script,
         }],
     };
@@ -101,7 +102,16 @@ pub fn create_trigger_tranx(
                 true => vec![],
             }
         });
-        script_witness.push(input.tap_key_sig.unwrap().to_vec());
+        script_witness.push(
+            input
+                .tap_script_sigs
+                .get(&(
+                    input.tap_internal_key.unwrap(),
+                    vault.trigger_script.as_script().tapscript_leaf_hash(),
+                ))
+                .unwrap()
+                .to_vec(),
+        );
         script_witness.push(vault.trigger_script.clone());
         let control_block = vault_tr
             .control_block(&(vault.trigger_script.clone(), LeafVersion::TapScript))

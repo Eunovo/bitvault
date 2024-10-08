@@ -61,7 +61,7 @@ struct BitcoindError {
 struct ImportDescriptor {
     desc: String,
     label: String,
-    timestamp: i32,
+    timestamp: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -77,14 +77,14 @@ struct DescriptorInfo {
 
 pub fn import_privkey(client: &Client, privkey: &String) -> Result<bool, Box<dyn std::error::Error>> {
     // let privkey = "cP53pDbR5WtAD8dYAW9hhTjuvvTVaEiQBdrz9XPrgLBeRFiyCbQr";
-    let desc = format!("pk({privkey})");
+    let desc = format!("wpkh({privkey})");
     let descriptor_info: DescriptorInfo =
         send_json_request(client, "getdescriptorinfo", &[serialize(&desc)]);
     let checksum = descriptor_info.checksum;
     let import_desc_req = [ImportDescriptor {
         desc: format!("{desc}#{checksum}"),
         label: "bitvault".to_string(),
-        timestamp: 0,
+        timestamp: "now".to_string(),
     }];
     let response: Vec<ImportDescriptorResponse> =
         send_json_request(client, "importdescriptors", &[serialize(&import_desc_req)]);
@@ -172,4 +172,12 @@ fn test_generate_and_fetch_coins() {
         }
         Err(e) => panic!("{}", e),
     };
+}
+
+pub fn send_raw_transaction(client: &Client, hex: &String) -> String {
+    send_json_request::<String>(
+        client,
+        "sendrawtransaction",
+        &[serialize(hex)],
+    )
 }

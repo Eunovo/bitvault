@@ -2,7 +2,7 @@ use bitcoin::blockdata::locktime::absolute::LockTime;
 use bitcoin::opcodes::all::{OP_CSV, OP_DROP};
 use bitcoin::taproot::{TaprootBuilder, TaprootSpendInfo};
 use bitcoin::{script, OutPoint, ScriptBuf, Sequence, Transaction, TxIn, Witness};
-use secp256k1::{Secp256k1, XOnlyPublicKey, KeyPair};
+use secp256k1::{KeyPair, Secp256k1, XOnlyPublicKey};
 
 use crate::bip119::get_standard_template_hash;
 use crate::constants::OP_CTV;
